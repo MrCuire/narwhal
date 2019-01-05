@@ -10,15 +10,10 @@ include_once ROOT_FW_PATH."application/class/cls_init.php";
 spl_autoload_register("cls_init::autoload");
 
 // composer的自动加载
-require_once ROOT_FW_PATH . 'vendor/autoload.php';
+//require_once ROOT_FW_PATH . 'vendor/autoload.php';
 
 $init=new cls_init();
 
-if ($_SESSION) {
-	$_SESSION['INNER_MSG_PORT']=INNER_MSG_PORT;
-	$_SESSION['MSG_PORT']=MSG_PORT;
-	$_SESSION['HTML_MSG_PORT']=HTML_MSG_PORT;
-}
 $_G["userInfo"]=$init->user;
 
 $_G["severName"]=$_SERVER['SERVER_NAME'];

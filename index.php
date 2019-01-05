@@ -16,7 +16,6 @@ define("FW_NAME",$arr[count($arr)-2]);
 
 define('ROOT_PATH', str_replace(FW_NAME.'/index.php', '', str_replace('\\', '/', __FILE__)));
 define('ROOT_FW_PATH', str_replace('index.php', '', str_replace('\\', '/', __FILE__)));
-define('OPEN_PATH', ROOT_FW_PATH . '/application/source/open/');
 
 define("LIB_PATH",str_replace('/index.php', '', str_replace('\\', '/', __FILE__))."/application/function/includes/");
 

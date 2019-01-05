@@ -16,7 +16,7 @@ class cls_init
     var $input = null;
     static $obj = array();
     #公共初始化项
-    var $config_list = array("api", "db", "ecs", "config", "sess", "user");
+    var $config_list = array("api", "db", "config", "sess");
     #公共类文件
     var $common_files = array("cls_api", "cls_output", "cls_error");
 
@@ -79,23 +79,6 @@ class cls_init
 
     }
 
-    private function _user_init()
-    {
-        if (isset($_SESSION["supplier_user_id"]) && !empty($_SESSION["supplier_user_id"]) && $_SESSION["supplier_user_id"] != 0 && substr($this->input->header->session, 0, 32) == SESS_ID) {
-            $search = "user_name,user_id,email,last_login,last_ip,mobile_phone,supplier_id,alias,ukey,usign,lv,signing_price,user_money,action_list";
-            $where = ' user_id=' . $_SESSION["supplier_user_id"];
-//            $sql = "select " . $search . " from " . $GLOBALS['ecs']->table(cls_user::$supplier_user_table) . " where " . $where;
-            $sql = "select " . $search . " from " . $GLOBALS['ecs']->table('supplier_admin_user') . " where " . $where;
-            $this->user = $this->db->getRow($sql);
-        } else {
-            return $this->user = array();
-        }
-
-//        $this->user_init = true;
-    }
-
-
-
     private function _input_init()
     {
         //设置 path_info 模式
@@ -113,17 +96,8 @@ class cls_init
                     }
                     $_REQUEST=array('input'=>json_encode($post_input));
                 }
-//                if(count($_POST)==1 && isset($_POST['input'])){
-//                    $_REQUEST=array('input'=>$_POST['input']);
-//                }else{
-//                    $input = json_decode($_POST['input'],true);
-//                    $input['business']=$_POST;
-//                    unset($input['business']['input']);
-//                    $_REQUEST=array('input'=>json_encode($input));
-//                }
             }
         }
-//        var_dump($_REQUEST);die();
         if(empty($_REQUEST)){
             $_REQUEST=array("input"=>file_get_contents("php://input"));
         }
@@ -153,19 +127,13 @@ class cls_init
                 $input['business'][$key] = $item;
             }
             if(isset($_POST) && !empty($_POST)){
-                if (isset($_GET["FROM"]) && !empty($_GET["FROM"])) {
-                    #从api云市场过来的参数
-                    $input["business"]["records"]=$_POST; #ali云市场
-
-                }else{
-                    if(isset($input['business'])){
+                if(isset($input['business'])){
                         $temp=$input['business'];
                         $business=array_merge($temp,$_POST);
                         $input['business']=$business;
                     }else{
                         $input['business']=$_POST;
                     }
-                }
             }else{
                 if(isset($_REQUEST['input']) && !empty($_REQUEST['input'])){
                     $request = json_decode($_REQUEST['input'],true);
@@ -281,64 +249,18 @@ class cls_init
 
     private function _db_init()
     {
-        require_once(SYSTEM_PATH . 'data/config.php');
-        require_once(LIB_PATH . 'cls_mysql.php');
-        $this->db = $db = new cls_mysql($db_host, $db_user, $db_pass, $db_name);
-        $this->prefix = $prefix;
+        require_once(ROOT_FW_PATH . 'config/database_config.php');
+        require_once(ROOT_FW_PATH . 'database.php');
+//        $this->db = $db = new cls_mysql($db_host, $db_user, $db_pass, $db_name);
+//        $this->prefix = $prefix;
+        $this->db = $db=DB($db_config);
     }
 
     private function _config_init()
     {
-        $arr = array();
-
-        $sql = 'SELECT code, value FROM ' . $GLOBALS['ecs']->table('shop_config') . ' WHERE parent_id > 0';
-        $res = $this->db->getAll($sql);
-
-        foreach ($res AS $row) {
-            $arr[$row['code']] = $row['value'];
-        }
-
-        /* 对数值型设置处理 */
-        $qq = $this->db->getAll("SELECT cus_no FROM " . $GLOBALS['ecs']->table('chat_third_customer') . " WHERE is_master = 1 AND cus_type = 0");
-        $ww = $this->db->getAll("SELECT cus_no FROM " . $GLOBALS['ecs']->table('chat_third_customer') . " WHERE is_master = 1 AND cus_type = 1");
-
-        if (!empty($qq)) {
-            foreach ($qq as $k => $v) {
-                $arr['qq'] = $arr['qq'] . ',' . $v['cus_no'];
-            }
-        } else {
-            $arr['qq'] = "";
-        }
-        if (!empty($ww)) {
-            foreach ($ww as $k => $v) {
-                $arr['ww'] = $arr['ww'] . ',' . $v['cus_no'];
-            }
-        } else {
-            $arr['ww'] = "";
-        }
-
-        //限定语言项
-        $lang_array = array('zh_cn', 'zh_tw', 'en_us');
-        if (empty($arr['lang']) || !in_array($arr['lang'], $lang_array)) {
-            $arr['lang'] = 'zh_cn'; // 默认语言为简体中文
-        }
-        $l_p = self::$_application . "_language_path";
-
-        if (!defined($l_p)) {
-            define($l_p, LANGUAGE_PATH . self::$_application . "/");
-        }
-        $GLOBALS["_CFG"] = $arr;
 
     }
 
-    private function _ecs_init()
-    {
-//        die(var_dump($this->db));
-        require_once(LIB_PATH . 'cls_ecshop.php');
-        $this->ecs = $GLOBALS['ecs'] = new ECS($this->db->settings['dbname'], $this->prefix);
-        define('DATA_DIR', $this->ecs->data_dir());
-        define('IMAGE_DIR', $this->ecs->image_dir());
-    }
 
     static function autoload($class)
     {
