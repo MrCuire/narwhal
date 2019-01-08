@@ -1,7 +1,11 @@
 <?php
-require_once ROOT_FW_PATH.'/application/source/tc/common/Common.php';
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+require_once ROOT_FW_PATH.'config/common/Common.php';
+require_once ROOT_FW_PATH.'config/common/Files.php';
+require_once ROOT_FW_PATH.'config/common/Info.php';
+require_once ROOT_FW_PATH.'config/common/Notify.php';
+require_once ROOT_FW_PATH.'config/common/Tree.php';
+//use Monolog\Logger;
+//use Monolog\Handler\StreamHandler;
 class table{
 
     use Common;
@@ -13,7 +17,7 @@ class table{
     {
         global $init;
         $this->db=$init->db;
-       $this->log = new Logger('log_info');
+//       $this->log = new Logger('log_info');
     }
     /**
      * 获取表字段
@@ -255,6 +259,7 @@ class table{
 }
 class cls_base_controller
 {
+    use Common,Files,Info,Notify,Tree;
     public $data="";
 
     function __construct()
@@ -267,141 +272,9 @@ class cls_base_controller
             }
         }
 
-        //tc应用中, 除了loan模块, 其他的模块都需要登录验证
-        if(
-            count((array)$GLOBALS['header']->route)
-            && $GLOBALS['header']->route->application == 'tc'
-            && $GLOBALS['header']->route->module != 'loan'
-        ) {
-            //检查登陆
-            if(CHECK_LOGIN === true) {
-                $this->checkLogin();
-            }
-            //权限检查
-            if(CHECK_AUTH === true && $this->allowAuth()) {
-                $this->checkAuth();
-            }
-        }
 
     }
 
-
-    private function allowAuth()
-    {
-        //不在ignore_action列表中
-        return (! $this->isIgnoreAction()) &&
-            //不在nologin_ignore列表中
-            (!$this->isNologinIgnore()) &&
-            //平台用户不需要检查权限
-            ($_SESSION['user']['type'] !== '0') &&
-            //普通用户不需要检查权限
-            ($_SESSION['platform'] != 3);
-    }
-
-    //检查用户的权限
-    private function checkAuth()
-    {
-        require_once ROOT_FW_PATH . '/application/source/tc/auth/auth.php';
-        $auth = new auth();
-
-        //路由信息
-        $route = $GLOBALS['header']->route;
-        //手机号码
-        $phone = $_SESSION['user']['phone'];
-
-        //当前用户所属的角色
-        $roleId = $auth->byPhoneToRoleId($phone);
-
-        if(empty($roleId)) {
-            cls_output::out('E120118', '该用户不属于某个角色');
-        }
-
-        //当前访问的节点id
-        $nodeId = $auth->getNodeId($route->module, $route->controller, $route->function);
-        if(empty($nodeId)) {
-            cls_output::out('E120118', '该节点尚未录入');
-        }
-
-        //判断是否有权限访问
-        if(! $auth->hasAccess($roleId, $nodeId)) {
-//            var_dump($_SESSION);exit;
-            cls_output::out('E120118', '您没有权限访问');
-        }
-    }
-
-    //没有登录的用户自动跳转到登录页面
-    private function checkLogin()
-    {
-        if(isset($GLOBALS["header"]->session)) {
-            $sessionKey = $GLOBALS["header"]->session;
-        }elseif(isset($_GET['session'])) {
-            $sessionKey = $_GET['session'];
-        }else{
-            $sessionKey = null;
-        }
-
-        //不需要验证登录的方法
-        if($this->isIgnoreAction()){
-            $sessionKey ? @session_id($sessionKey) : @session_id(SESS_ID.gen_session_key(SESS_ID . time()));
-            @session_start();
-            return true;
-        }elseif ($this->isNologinIgnore() && $sessionKey){
-            //不需要走小柜后台的登录流程的方法
-            @session_id($sessionKey);
-            @session_start();
-            return true;
-        }elseif($sessionKey){
-            //小柜后台登录
-            @session_id($sessionKey);
-            @session_start();
-        }else{
-             cls_output::out('E120002', '没有传递session_key');
-        }
-
-        //用户已经登录
-        if(isset($_SESSION['user']) && count($_SESSION['user'])>2){
-            //其他客户端使用该账户登录了系统, 本账户被挤出
-            $this->checkLocation($sessionKey);
-
-            //登陆超时设置
-            $this->loginTimeout();
-            return true;
-        }
-
-        //用户没有登录
-        cls_output::out('E120000', '您没有登录');
-    }
-
-    //其他客户端使用该账户登录了系统, 本账户被挤出
-    private function checkLocation($oldSessionKey)
-    {
-        $table = $GLOBALS['ecs']->table('login_pool');
-        $where = "user_id={$_SESSION['user']['id']} and from_platform={$_SESSION['platform']}";
-        //获取数据表最新的session_key
-        $sessionKey = $GLOBALS['db']->getOne("select session_id from {$table} where {$where}");
-
-        if($sessionKey && ($oldSessionKey != $sessionKey)){
-            cls_output::out('E120000', '您已经在其他地方登录了, 如非本人操作, 请修改您的密码');
-        }
-    }
-
-    //不需要验证的方法
-    private function isIgnoreAction()
-    {   
-        $route = $this->getPointRoute();
-        $allowAction = require ROOT_FW_PATH . 'config/tc_login_ignore.php';
-
-        return in_array($route, $allowAction);
-    }
-
-    //不需要走小柜后台登录流程的方法
-    private function isNologinIgnore()
-    {
-        $route = $this->getPointRoute();
-        $allowAction = require ROOT_FW_PATH . 'config/tc_nologin_ignore.php';
-
-        return in_array($route, $allowAction);
-    }
 
     /**
      * 获取点语法表示的路由
@@ -424,29 +297,6 @@ class cls_base_controller
     }
 
 
-    private function loginTimeout()
-    {
-        @ini_set('session.gc_maxlifetime', LOGIN_TIMEOUT + 2);
-        @ini_set("session.cookie_lifetime",LOGIN_TIMEOUT + 2);
-
-        //session有效期
-        if(isset($_SESSION['expiretime']) && $_SESSION['expiretime'] < time()) {
-            logout();
-            cls_output::out('E120000', '登陆超时, 请重新登陆');
-        }
-        //无活动时间超时设置
-        if(isset($_SESSION['activetime']) && $_SESSION['activetime'] < time()) {
-            logout();
-            cls_output::out('E120000', '您太长时间没有操作了, 为了您的账号安全, 请重新登陆');
-        }
-
-        //如果没有超出规定的活动时间, 则更新最后一次的活动时间
-        $activeTime = time() + LOGIN_ACTIVE_TIME;
-        //更新session
-        $_SESSION['activetime'] = $activeTime;
-        //更新登录池
-        $GLOBALS['db']->edit(['active_time' => $activeTime], ['user_id'=>$_SESSION['user']['id']], 'login_pool');
-    }
 
     public static function newInstance(callable $callback)
     {

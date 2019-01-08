@@ -28,7 +28,7 @@ class cls_init
         @ini_set('session.use_trans_sid', 0);
         @ini_set('session.use_cookies', 1);
         @ini_set('session.auto_start', 0);
-        @ini_set('display_errors', 0);
+        @ini_set('display_errors', 1);
 
 //        require_once(LIB_PATH . 'inc_constant.php');
         require_once(LIB_PATH . 'lib_time.php');
@@ -42,23 +42,21 @@ class cls_init
         #初始化输入内容
         $this->_input_init();
         #检查实例化内容
-        $application_init_name = "cls_" . self::$_application . "_init";
+        //$application_init_name = "cls_" . self::$_application . "_init";
 
-
-
-        $obj = self::make_obj($application_init_name);
+        //$obj = self::make_obj($application_init_name);
 //        var_dump($obj);die();
-        $obj->init($this->input);
+//        $this->init($this->input);
 
         foreach ($this->config_list as $item) {
-            $i = $item . "_init";
-            if (isset($obj->$i) && $obj->$i == true) {
-                $this->$item = $obj->$item;
-            } else {
+//            $i = $item . "_init";
+//            if (isset($obj->$i) && $obj->$i == true) {
+//                $this->$item = $obj->$item;
+//            } else {
                 $f = "_{$item}_init";
                 call_user_func(array($this, $f));
             }
-        }
+//        }
 
         require_once(LANGUAGE_PATH . '/admin/common.php');
         require_once(LANGUAGE_PATH . '/admin/log_action.php');
@@ -68,13 +66,14 @@ class cls_init
         $this->_save_req();
     }
 
+
     private function _sess_init()
     {
-        $session_id = isset($GLOBALS["header"]->session) ? $GLOBALS["header"]->session : "";
-
-        $this->sess = new cls_session($this->db, $GLOBALS["ecs"]->table("sessions"), $GLOBALS["ecs"]->table('sessions_data'), 'user_sess_id', self::$_application, $session_id);
-
-        define("SESS_ID", $this->sess->get_session_id());
+//        $session_id = isset($GLOBALS["header"]->session) ? $GLOBALS["header"]->session : "";
+//
+//        $this->sess = new cls_session($this->db, $GLOBALS["ecs"]->table("sessions"), $GLOBALS["ecs"]->table('sessions_data'), 'user_sess_id', self::$_application, $session_id);
+//
+//        define("SESS_ID", $this->sess->get_session_id());
 
 
     }
@@ -250,10 +249,10 @@ class cls_init
     private function _db_init()
     {
         require_once(ROOT_FW_PATH . 'config/database_config.php');
-        require_once(ROOT_FW_PATH . 'database.php');
+        require_once(ROOT_FW_PATH . 'config/database.php');
 //        $this->db = $db = new cls_mysql($db_host, $db_user, $db_pass, $db_name);
 //        $this->prefix = $prefix;
-        $this->db = $db=DB($db_config);
+        $this->db = $db=DB($db_config[ENVIRONMENT]);
     }
 
     private function _config_init()
@@ -370,6 +369,7 @@ class cls_init
             'role_id' => "10",
             'time' => time(),
         );
-        $res = $this->db->add($insertData,"req");
+//        $res = $this->db->add($insertData,"req");
+        $this->db->insert('req',$insertData);
     }
 }

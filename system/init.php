@@ -16,13 +16,9 @@ $init=new cls_init();
 
 $_G["userInfo"]=$init->user;
 
-$_G["severName"]=$_SERVER['SERVER_NAME'];
-$_G["clientIp"]=real_ip();
-$_G["serverPort"]=$_SERVER['SERVER_PORT'];
-$_G["serverIp"]=$_SERVER['SERVER_ADDR'];
-$_G['isHTTPS'] = isset($_SERVER['HTTPS'])&&($_SERVER['HTTPS'] && strtolower($_SERVER['HTTPS']) != 'off') ? true : false;
-$_G["serverRoot"]="http".($_G['isHTTPS']?"s":"")."://".$_G["serverIp"].(empty($_G['serverPort'])?"":":".$_G['serverPort']);
-$_G["siteUrl"]='http'.($_G['isHTTPS']?"s":"").'://'.$_SERVER['HTTP_HOST']."/";
+//$_G['isHTTPS'] = isset($_SERVER['HTTPS'])&&($_SERVER['HTTPS'] && strtolower($_SERVER['HTTPS']) != 'off') ? true : false;
+//$_G["serverRoot"]="http".($_G['isHTTPS']?"s":"")."://".$_G["serverIp"].(empty($_G['serverPort'])?"":":".$_G['serverPort']);
+//$_G["siteUrl"]='http'.($_G['isHTTPS']?"s":"").'://'.$_SERVER['HTTP_HOST']."/";
 if (isset($_SERVER['PHP_SELF']))
 {
     $_G["phpSelf"]=$_SERVER['PHP_SELF'];
